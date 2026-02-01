@@ -6,7 +6,17 @@
       "Bash(chmod:*)",
       "Bash(podman-compose logs:*)",
       "Bash(podman logs:*)",
-      "Bash(podman ps:*)"
+      "Bash(podman ps:*)",
+      "Bash(ls:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker exec tav-keycloak-1 sh -c \"which wget || which curl || echo ''Neither found''\")",
+      "Bash(docker exec:*)",
+      "Bash(curl:*)",
+      "Bash(docker volume rm:*)",
+      "Bash(python3 -m json.tool:*)",
+      "Bash(git log:*)",
+      "Bash(docker network inspect:*)",
+      "Bash(python3:*)"
     ]
   }
 }

@@ -1,0 +1,25 @@
+metadata_dir = "/data/meta"
+data_dir = "/data/data"
+db_engine = "sqlite"
+
+replication_mode = "none"
+
+compression_level = 1
+
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+rpc_secret = "8432d5da5dba96584de945badf949f2c4ceca559d0a01b43c5110a00e8995074"
+
+[s3_api]
+s3_region = "tav-region"
+api_bind_addr = "[::]:3900"
+root_domain = ".s3.garage.tav"
+
+[s3_web]
+bind_addr = "[::]:3902"
+root_domain = ".web.garage.tav"
+
+[admin]
+api_bind_addr = "[::]:3903"
+metrics_token = "clFucTtQN+tAL/SMqXbZJyjraD9Nc/VDg3pA1VKZIGEgnyc5q4U4SztNG0RLagOK"
+admin_token = "clFucTtQN+tAL/SMqXbZJyjraD9Nc/VDg3pA1VKZIGEgnyc5q4U4SztNG0RLagOK"

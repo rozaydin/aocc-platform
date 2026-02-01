@@ -1,0 +1,50 @@
+# Bento Stream Processing Configuration
+# Example: NATS -> Transform -> Stdout (simplified)
+
+input:
+  label: "nats_events"
+  nats:
+    urls:
+      - "nats://nats:4222"
+    subject: "events.>"
+    queue: "bento-processors"
+
+pipeline:
+  processors:
+    # Add processing timestamp
+    - label: "add_timestamp"
+      bloblang: |
+        root = this
+        root.processed_at = now().format("2006-01-02T15:04:05Z07:00")
+
+    # Parse JSON if needed
+    - label: "parse_json"
+      bloblang: |
+        root = if this.string().parse_json().catch(this) { this.parse_json() } else { this }
+
+    # Example enrichment
+    - label: "enrich"
+      bloblang: |
+        root = this
+        root.source = "nats"
+        root.pipeline = "bento"
+
+output:
+  label: "stdout_output"
+  stdout:
+    codec: lines
+
+# Metrics
+metrics:
+  prometheus:
+    push_interval: "10s"
+
+http:
+  enabled: true
+  address: "0.0.0.0:4195"
+
+# Logging
+logger:
+  level: INFO
+  format: json
+  add_timestamp: true

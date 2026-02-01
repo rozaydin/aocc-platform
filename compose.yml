@@ -46,6 +46,12 @@ services:
       KC_HTTP_ENABLED: "true"
     depends_on:
       - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/keycloak/bin/kc.sh show-config > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
     networks:
       - tav
 
@@ -60,9 +66,10 @@ services:
       - --client-secret=${OAUTH2_PROXY_CLIENT_SECRET}
       - --cookie-secret=${OAUTH2_PROXY_COOKIE_SECRET}
       - --cookie-secure=false
+      - --cookie-domain=localhost
+      - --whitelist-domain=localhost:8080
       - --redirect-url=http://localhost:8080/oauth2/callback
-      - --oidc-issuer-url=http://nginx/keycloak/realms/tav
-      - --insecure-oidc-skip-issuer-verification=true
+      - --oidc-issuer-url=http://localhost:8080/keycloak/realms/tav
       - --email-domain=*
       - --upstream=static://200
       - --reverse-proxy=true
@@ -71,8 +78,11 @@ services:
       - --skip-provider-button=true
       - --skip-auth-preflight=true
       - --code-challenge-method=S256
+    extra_hosts:
+      - "localhost:host-gateway"
     depends_on:
-      - keycloak
+      keycloak:
+        condition: service_healthy
     networks:
       - tav
 
@@ -92,11 +102,191 @@ services:
       GF_AUTH_PROXY_HEADER_PROPERTY: email
       GF_AUTH_PROXY_AUTO_SIGN_UP: "true"
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
-      GF_SERVER_ROOT_URL: http://localhost:8080/
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: Admin
+      GF_SERVER_ROOT_URL: "http://localhost:8080/grafana/"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
     depends_on:
       - pgbouncer
+      - prometheus
+      - loki
+    networks:
+      - tav
+
+  # ── Prometheus ──────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.external-url=http://localhost:8080/prometheus/'
+      - '--web.route-prefix=/'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - cadvisor
+      - postgres-exporter
+    networks:
+      - tav
+
+  # ── Alertmanager ────────────────────────────────────────
+  alertmanager:
+    image: prom/alertmanager:latest
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:8080/alertmanager/'
+      - '--web.route-prefix=/'
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - tav
+
+  # ── Loki (Log Aggregation) ─────────────────────────────
+  loki:
+    image: grafana/loki:latest
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/loki/loki.yaml
+      - -config.expand-env=true
+    environment:
+      LOKI_S3_ACCESS_KEY: ${LOKI_S3_ACCESS_KEY}
+      LOKI_S3_SECRET_KEY: ${LOKI_S3_SECRET_KEY}
+    volumes:
+      - ./loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki_data:/loki
+    depends_on:
+      - garage
+    networks:
+      - tav
+
+  # ── Alloy (Log Collector) ──────────────────────────────
+  alloy:
+    image: grafana/alloy:latest
+    restart: unless-stopped
+    user: "0:0"
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+    networks:
+      - tav
+
+  # ── Garage (Object Storage) ─────────────────────────────
+  garage:
+    image: dxflrs/garage:v1.0.1
+    restart: unless-stopped
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+      - garage_data:/data
+    networks:
+      - tav
+
+  # ── Nuclio (Serverless Functions) ──────────────────────
+  nuclio-dashboard:
+    image: quay.io/nuclio/dashboard:stable-amd64
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      NUCLIO_DASHBOARD_EXTERNAL_IP_ADDRESSES: "172.26.0.0/16"
+      NUCLIO_DASHBOARD_NO_PULL_BASE_IMAGES: "false"
+      NUCLIO_DASHBOARD_DEFAULT_FUNCTION_MOUNT_MODE: "volume"
+      NUCLIO_DASHBOARD_PLATFORM_KIND: "local"
+      NUCLIO_DASHBOARD_PLATFORM_CONFIGURATION_LOCAL_DEFAULT_NETWORK: "tav_tav"
+      NUCLIO_DASHBOARD_S3_ENDPOINT: "http://garage:3900"
+      NUCLIO_DASHBOARD_S3_ACCESS_KEY_ID: ${NUCLIO_S3_ACCESS_KEY}
+      NUCLIO_DASHBOARD_S3_SECRET_ACCESS_KEY: ${NUCLIO_S3_SECRET_KEY}
+      NUCLIO_DASHBOARD_S3_BUCKET: "nuclio-artifacts"
+      NUCLIO_DASHBOARD_S3_REGION: "tav-region"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nuclio_data:/etc/nuclio
+    depends_on:
+      - garage
+      - pgbouncer
+    networks:
+      - tav
+
+  # ── NATS (Message Broker) ──────────────────────────────
+  nats:
+    image: nats:latest
+    restart: unless-stopped
+    command:
+      - "--config"
+      - "/etc/nats/nats.conf"
+    ports:
+      - "4222:4222"  # Client connections
+      - "8222:8222"  # HTTP monitoring
+    volumes:
+      - ./nats/nats.conf:/etc/nats/nats.conf:ro
+      - nats_data:/data/jetstream
+    networks:
+      - tav
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "exec 3<>/dev/tcp/localhost/8222 && echo -e 'GET /healthz HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── Bento (Stream Processor) ───────────────────────────
+  bento:
+    image: ghcr.io/warpstreamlabs/bento:latest
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./bento/bento.yaml:/bento.yaml:ro
+    command:
+      - "-c"
+      - "/bento.yaml"
+    depends_on:
+      - nats
+      - pgbouncer
+    networks:
+      - tav
+
+  # ── cAdvisor ────────────────────────────────────────────────
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    networks:
+      - tav
+
+  # ── Postgres Exporter ───────────────────────────────────────
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres_exporter:${POSTGRES_EXPORTER_PASSWORD}@postgres:5432/tav?sslmode=disable"
+    depends_on:
+      - postgres
     networks:
       - tav
 
@@ -111,12 +301,22 @@ services:
     depends_on:
       - oauth2-proxy
       - grafana
+      - prometheus
+      - alertmanager
+      - garage
+      - nuclio-dashboard
     networks:
       - tav
 
 volumes:
   postgres_data:
   grafana_data:
+  prometheus_data:
+  alertmanager_data:
+  garage_data:
+  loki_data:
+  nuclio_data:
+  nats_data:
 
 networks:
   tav:

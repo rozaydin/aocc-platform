@@ -1,0 +1,63 @@
+// Discover Docker containers
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Relabel to extract useful labels
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "project"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_image"]
+    target_label  = "image"
+  }
+}
+
+// Collect logs from Docker
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  forward_to = [loki.process.process_logs.receiver]
+}
+
+// Process and enrich logs
+loki.process "process_logs" {
+  // Add static labels
+  stage.static_labels {
+    values = {
+      cluster = "tav-platform",
+    }
+  }
+
+  // Extract JSON logs if present
+  stage.json {
+    expressions = {
+      level = "level",
+    }
+  }
+
+  forward_to = [loki.write.loki.receiver]
+}
+
+// Write to Loki
+loki.write "loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
