@@ -1,0 +1,18 @@
+CONTAINER      NAME                          CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+73581e23f9e1   tav-nginx-1                   0.00%     12.9MiB / 58.74GiB    0.02%     585MB / 711MB     2.58MB / 12.3kB   13
+b7cf96182517   tav-grafana-1                 0.70%     113MiB / 58.74GiB     0.19%     33.7MB / 24.3MB   78.1MB / 45.6MB   17
+bac154f54f64   tav-nuclio-dashboard-1        1.43%     41.04MiB / 58.74GiB   0.07%     195kB / 345kB     1.99MB / 676kB    30
+244f1ea00742   tav-oauth2-proxy-1            0.00%     9.84MiB / 58.74GiB    0.02%     69.5MB / 161MB    344kB / 0B        20
+ef61886d6176   tav-bento-1                   0.00%     38.12MiB / 58.74GiB   0.06%     181kB / 187kB     1.06MB / 0B       12
+880ee944f87f   tav-prometheus-1              0.00%     329.7MiB / 58.74GiB   0.55%     142MB / 3.97MB    582kB / 33.6MB    17
+0f5f7b200d66   tav-alloy-1                   0.11%     67.44MiB / 58.74GiB   0.11%     271kB / 16.1MB    3.96MB / 17MB     19
+2512dcf724c9   tav-keycloak-1                136.74%   941MiB / 58.74GiB     1.56%     288MB / 345MB     14.9MB / 186MB    64
+f282bab152dd   tav-postgres-exporter-1       0.00%     8.094MiB / 58.74GiB   0.01%     8.01MB / 3.86MB   0B / 0B           15
+e455d3ad0698   tav-pgbouncer-1               0.22%     1.734MiB / 58.74GiB   0.00%     40.9MB / 40.8MB   41kB / 4.1kB      1
+840be5c87c55   tav-loki-1                    0.36%     176.9MiB / 58.74GiB   0.29%     16.3MB / 6.05MB   2.72MB / 123MB    18
+e3048f7f7d89   tav-postgres-1                0.24%     220.1MiB / 58.74GiB   0.37%     28MB / 29.6MB     5.06MB / 5.02GB   18
+51ba54f15262   tav-alertmanager-1            0.04%     19.2MiB / 58.74GiB    0.03%     1.59MB / 865kB    4.1kB / 0B        17
+f2d5888d1932   tav-garage-1                  0.02%     7.613MiB / 58.74GiB   0.01%     6.05MB / 13.8MB   233kB / 6.03MB    16
+68079e335262   tav-nats-1                    0.02%     5.406MiB / 58.74GiB   0.01%     184kB / 95.6kB    0B / 0B           13
+77eb1911c1d3   tav-cadvisor-1                3.34%     153.4MiB / 58.74GiB   0.26%     1.95MB / 124MB    778kB / 0B        21
+15cbac6bdc18   nuclio-local-storage-reader   0.00%     1.758MiB / 58.74GiB   0.00%     64.3kB / 0B       1.64MB / 0B       1

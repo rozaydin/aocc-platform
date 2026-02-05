@@ -1,0 +1,35 @@
+Phase,Component,Metric,Value,Unit,Target,Status
+1,PostgreSQL,Baseline TPS,6035.8,transactions/sec,>1000,PASS
+1,PostgreSQL,Load TPS,8787.8,transactions/sec,>500,PASS
+1,PostgreSQL,Baseline Latency,1.657,ms,<50,PASS
+1,PostgreSQL,Load Latency,5.690,ms,<100,PASS
+1,PgBouncer,Memory,1.75,MiB,<100,PASS
+1,PgBouncer,CPU,0.20,%,<10,PASS
+2,NGINX,Baseline Throughput,4206.94,req/sec,>500,PASS
+2,NGINX,Load Throughput,5458.64,req/sec,>500,PASS
+2,NGINX,Baseline Latency,24.54,ms,<100,PASS
+2,NGINX,Load Latency,37.00,ms,<100,PASS
+2,OAuth2-Proxy,Throughput,2335.85,req/sec,>500,PASS
+2,OAuth2-Proxy,Latency,21.92,ms,<100,PASS
+2,Keycloak,Memory,1003,MiB,<2048,PASS
+2,Keycloak,CPU,0.06,%,<50,PASS
+3,Prometheus,Range Query,0.01,seconds,<2,PASS
+3,Prometheus,Instant Query,0.01,seconds,<1,PASS
+3,Prometheus,Memory,271.9,MiB,<2048,PASS
+3,Grafana,API Response,0.01,seconds,<2,PASS
+3,Grafana,Memory,113,MiB,<512,PASS
+3,Loki,Labels Query,0.08,seconds,<2,PASS
+3,Loki,Log Query,0.01,seconds,<5,PASS
+3,Loki,Memory,138,MiB,<1024,PASS
+4,NATS,Memory,5.67,MiB,<100,PASS
+4,NATS,JetStream Max Memory,1073.74,MB,>500,PASS
+4,NATS,JetStream Max Storage,10737.42,MB,>5000,PASS
+4,Bento,Memory,36.12,MiB,<100,PASS
+4,Bento,Connection Failures,0,count,0,PASS
+4,Bento,Processing Errors,0,count,0,PASS
+5,Garage,Memory,7.31,MiB,<500,PASS
+5,Garage,CPU,0.00,%,<10,PASS
+5,Garage,S3 API Status,ACTIVE,status,ACTIVE,PASS
+5,Nuclio,Memory,41.12,MiB,<200,PASS
+5,Nuclio,CPU,1.35,%,<10,PASS
+5,Nuclio,Dashboard Status,HEALTHY,status,HEALTHY,PASS

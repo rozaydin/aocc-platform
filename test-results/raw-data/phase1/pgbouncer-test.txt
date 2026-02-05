@@ -1,0 +1,3 @@
+Password: 
+pgbench: error: connection to server at "pgbouncer" (172.19.0.8), port 6432 failed: fe_sendauth: no password supplied
+pgbench: error: could not create connection for setup

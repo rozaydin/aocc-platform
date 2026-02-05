@@ -1,0 +1,26 @@
+Nuclio Serverless Functions Platform Status
+
+Service: Running and operational  
+Image: quay.io/nuclio/dashboard:stable-amd64
+Health: healthy
+
+Dashboard:
+- HTTP Port: 8070
+- API Endpoint: /api/functions
+- UI: Accessible (Angular-based dashboard)
+
+Current State:
+- Deployed Functions: 0 (none deployed)
+- API Response: {} (empty object - expected)
+- Dashboard UI: Responsive
+
+Metrics:
+- Prometheus endpoint: Not available (no /metrics endpoint)
+- Function metrics: Would be available per-function when deployed
+
+Access:
+- Direct (internal): http://nuclio-dashboard:8070
+- Via NGINX: http://localhost:8080/nuclio/ (OAuth2 protected)
+
+Health Status: ✅ OPERATIONAL  
+Note: Ready for function deployment, awaiting workloads

@@ -1,0 +1,14 @@
+Loki Query Performance Tests
+
+Test 1: Labels API
+Endpoint: /loki/api/v1/labels
+Response time: 0.08s (80ms)
+Response size: 106 bytes
+Status: ✅ PASS (Target: <2s)
+
+Test 2: Log Query (1 hour range)
+Query: {job="docker"} limit 1000
+Time range: Last 1 hour
+Response time: 0.01s (10ms)
+Response size: 3,481 bytes
+Status: ✅ PASS (Target: <5s)

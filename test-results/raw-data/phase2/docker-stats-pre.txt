@@ -1,0 +1,4 @@
+CONTAINER ID   NAME                 CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+73581e23f9e1   tav-nginx-1          0.00%     12.74MiB / 58.74GiB   0.02%     11.1MB / 11.3MB   2.58MB / 12.3kB   13
+244f1ea00742   tav-oauth2-proxy-1   0.00%     4.035MiB / 58.74GiB   0.01%     16kB / 3.01kB     0B / 0B           9
+2512dcf724c9   tav-keycloak-1       0.07%     871.5MiB / 58.74GiB   1.45%     5.53MB / 12.4MB   14.9MB / 184MB    64

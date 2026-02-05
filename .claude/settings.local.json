@@ -16,7 +16,13 @@
       "Bash(python3 -m json.tool:*)",
       "Bash(git log:*)",
       "Bash(docker network inspect:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(docker stats:*)",
+      "Bash(tee:*)",
+      "Bash(wrk:*)",
+      "Bash(})",
+      "Bash(echo:*)",
+      "Bash(./generate-all.sh:*)"
     ]
   }
 }

@@ -1,0 +1,8 @@
+Running 1m test @ http://localhost:8080/keycloak/
+  10 threads and 200 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    37.00ms   19.15ms 169.96ms   62.51%
+    Req/Sec   548.63    259.74     1.51k    88.58%
+  327879 requests in 1.00m, 100.06MB read
+Requests/sec:   5458.64
+Transfer/sec:      1.67MB

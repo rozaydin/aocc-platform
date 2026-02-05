@@ -1,0 +1,6 @@
+Prometheus Range Query Performance Test
+Query: rate(container_cpu_usage_seconds_total[5m]) over 1 hour
+Time range: Last 1 hour, step=60s
+Response time: <0.01s
+Response size: 288802 bytes (282 KB)
+Status: ✅ PASS (Target: <2s)

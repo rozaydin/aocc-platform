@@ -1,0 +1,8 @@
+Running 30s test @ http://localhost:8080/grafana/
+  4 threads and 50 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    21.92ms   15.18ms 129.49ms   79.25%
+    Req/Sec   586.77    366.53     1.62k    85.58%
+  70142 requests in 30.03s, 99.54MB read
+Requests/sec:   2335.85
+Transfer/sec:      3.31MB

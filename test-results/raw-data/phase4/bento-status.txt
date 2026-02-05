@@ -1,0 +1,32 @@
+Bento Stream Processor Status
+
+Version: v1.14.1
+HTTP Metrics Port: 4195
+
+Configuration:
+- Input: NATS (nats://nats:4222)
+  - Subject: events.>
+  - Queue: bento-processors
+  - Durable Consumer: bento-consumer
+  
+- Pipeline: 3 processors
+  1. Add timestamp
+  2. Parse JSON
+  3. Enrich metadata
+  
+- Output: Fallback (PostgreSQL primary, stdout secondary)
+
+Connection Status:
+- NATS Input: ✅ Connected (connection_up=1)
+- Output: ✅ Connected (connection_up=1)
+- Connection Failures: 0
+- Connection Losses: 0
+
+Metrics (Current):
+- Messages Received: 0 (no traffic)
+- Messages Sent: 0
+- Errors: 0
+- Latency: N/A (no traffic)
+
+Health Status: ✅ OPERATIONAL
+Ready to process event streams from NATS

@@ -1,0 +1,3 @@
+CONTAINER ID   NAME              CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O        PIDS
+e3048f7f7d89   tav-postgres-1    0.27%     225.4MiB / 58.74GiB   0.37%     4.37MB / 5.43MB   5.04MB / 4.7GB   21
+e455d3ad0698   tav-pgbouncer-1   0.20%     1.746MiB / 58.74GiB   0.00%     3.1MB / 3.09MB    41kB / 4.1kB     1

@@ -1,0 +1,30 @@
+NATS Server Configuration and Status
+
+Server Info:
+- Version: 2.12.4
+- Server Name: tav-nats
+- Client Port: 4222
+- HTTP Monitoring: 8222
+- Max Connections: 1000
+- Max Payload: 1 MB (1048576 bytes)
+- Max Pending: 100 MB (104857600 bytes)
+
+JetStream Configuration:
+- Status: Enabled and Active
+- Max Memory: 1 GB (1073741824 bytes)
+- Max Storage: 10 GB (10737418240 bytes)
+- Store Directory: /data/jetstream/jetstream
+- API Level: 2
+- Sync Interval: 120s
+
+Current Stats:
+- Active Streams: 0
+- Active Consumers: 0
+- Messages: 0
+- Memory Usage: 0 bytes
+- Storage Usage: 0 bytes
+- API Calls: 0
+- API Errors: 0
+
+Health Status: ✅ OPERATIONAL
+Note: Healthcheck shows unhealthy due to missing wget in container, but service is fully functional

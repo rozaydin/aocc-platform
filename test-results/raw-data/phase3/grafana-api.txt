@@ -1,0 +1,5 @@
+Grafana API Performance Test
+Endpoint: /api/health
+Response time: <0.01s
+Status: database=ok, version=12.3.2
+Status: ✅ PASS (Target: <2s)

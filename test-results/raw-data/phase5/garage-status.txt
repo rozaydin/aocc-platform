@@ -1,0 +1,23 @@
+Garage S3 Storage Status
+
+Service: Running and operational
+Image: dxflrs/garage:v1.0.1
+
+Active Usage:
+- Loki log storage backend (loki-chunks bucket)
+- Prometheus metrics scraping
+- S3 API: Port 3900 (internal)
+- Admin API: Port 3903 (internal)
+
+Observed Activity:
+- Prometheus scrapes metrics every 30s
+- Loki queries index data regularly
+- S3 LIST operations successful
+- Authentication: Required (403 on unauthenticated requests)
+
+Configuration:
+- Region: tav-region  
+- Buckets: loki-chunks (for Loki log storage)
+
+Health Status: ✅ OPERATIONAL
+Note: Serving as Loki's S3 backend successfully
