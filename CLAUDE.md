@@ -26,48 +26,69 @@ There is no build step, test suite, or linter — this is infrastructure-as-conf
 
 ## Architecture
 
-**Request flow:** Browser → NGINX (:8080) → OAuth2-Proxy (:4180) → Keycloak (:8080) for auth, then NGINX proxies to Grafana (:3000).
+**16 services** organized into functional layers:
 
-**Key paths in NGINX:**
-- `/` → Grafana (protected by `auth_request` to OAuth2-Proxy)
-- `/oauth2/` → OAuth2-Proxy (user-facing OAuth routes: login, callback, sign_out)
-- `/oauth2/auth` → OAuth2-Proxy (internal-only `auth_request` subrequest, exact match, body stripped)
-- `/keycloak/` → Keycloak
+### Ingress & Auth
+- **NGINX** (:8080) — Reverse proxy, routes to all services
+- **OAuth2-Proxy** (:4180) — Authentication gateway
+- **Keycloak** (:8080) — Identity provider (OIDC)
 
-**Database flow:** Services → PgBouncer (:6432) → PostgreSQL (:5432). Three databases: `tav`, `keycloak`, `grafana`.
+**Request flow:** Browser → NGINX → OAuth2-Proxy → Keycloak for auth, then NGINX proxies to protected services.
 
-**Planned/documented services not yet in compose.yml:** Prometheus, Alertmanager, cAdvisor, Loki, Alloy, Garage, NATS, Bento, Nuclio, Postgres Exporter. See `documents/Architecture.md` for descriptions.
+### Data Layer
+- **PostgreSQL** (:5432) — Primary relational database (3 DBs: `tav`, `keycloak`, `grafana`)
+- **PgBouncer** (:6432) — Connection pooler (session mode)
+- **Garage** (:3900 S3, :3903 admin) — S3-compatible object storage (Loki chunks, Nuclio artifacts)
+
+### Event Streaming & Processing
+- **NATS** (:4222 client, :8222 monitoring) — Message broker with JetStream (1GB mem, 10GB disk, 1000 max connections)
+- **Bento** (:4195) — Stream processor (consumes `events.>` from NATS)
+
+### Serverless Compute
+- **Nuclio** (:8070) — FaaS platform, triggered by NATS/HTTP/cron
+
+### Observability Stack
+- **Prometheus** (:9090) — Metrics collection (scrapes 7 targets at 30s intervals, 15d retention)
+- **Alertmanager** (:9093) — Alert routing
+- **Grafana** (:3000) — Dashboards & visualization
+- **Loki** (:3100) — Log aggregation (720h retention, S3 backend via Garage)
+- **Alloy** — Log collector (ships container logs to Loki)
+- **cAdvisor** (:8080) — Container resource metrics
+- **Postgres Exporter** (:9187) — PostgreSQL metrics
+
+### Data Flow Patterns
+```
+Events:    Producer → NATS → Bento → [transform] → destination
+Logs:      Containers → Alloy → Loki → Garage (S3)
+Metrics:   Services → Prometheus → Grafana
+Functions: NATS/HTTP → Nuclio → [process] → NATS/S3/DB
+```
 
 ## Key Files
 
-- `compose.yml` — All service definitions, networks, volumes
+- `compose.yml` — All 16 service definitions, networks, volumes
 - `.env` — Credentials and secrets (never commit real values)
 - `nginx/nginx.conf` — Reverse proxy routing and auth_request config
 - `pgbouncer/pgbouncer.ini` — Connection pool settings (session mode, DISCARD ALL)
 - `pgbouncer/entrypoint.sh` — Generates userlist.txt from env vars at startup
 - `postgres/init.sql` — Creates keycloak and grafana databases on first run
+- `nats/nats.conf` — JetStream config (1GB mem, 10GB file, 1MB payload)
+- `bento/bento.yaml` — Stream processor pipeline (NATS input → transform → output)
+- `loki/loki.yaml` — Log aggregation config (S3 backend, 720h retention)
+- `prometheus/prometheus.yml` — Scrape targets (7 jobs at 30s interval)
+- `prometheus/alert-rules.yml` — Alert definitions
+- `alertmanager/alertmanager.yml` — Alert routing rules
+- `garage/garage.toml` — S3 object storage config
+- `alloy/config.alloy` — Log collection pipeline
+- `grafana/provisioning/` — Datasources and dashboard definitions
 
 ## Current State & Known Issues
 
-### OAuth2-Proxy ↔ Keycloak token exchange (IN PROGRESS)
-The core problem: Keycloak advertises `http://localhost:8080/keycloak/realms/tav` as its issuer/token endpoint (via `KC_HOSTNAME`). OAuth2-proxy's `keycloak-oidc` provider ignores `--redeem-url` overrides and uses the discovered endpoints. From inside a container, `localhost` doesn't reach the host.
-
-**Current config:** `--oidc-issuer-url=http://nginx/keycloak/realms/tav` routes OIDC discovery through nginx internally. This has NOT been tested yet.
-
-**On Linux (target platform):** Simpler fixes are available:
-- `extra_hosts: "localhost:host-gateway"` works on Linux Podman/Docker
-- Docker supports `host.docker.internal` natively
-- `depends_on` with `condition: service_healthy` works on Docker
-- DNS resolver `127.0.0.11` works on Docker (currently hardcoded to `10.89.1.1` for Podman macOS)
-
-**When moving to Linux Docker, consider reverting:**
-1. `nginx.conf` resolver back to `127.0.0.11`
-2. `--oidc-issuer-url` back to `http://keycloak:8080/keycloak/realms/tav` (with `extra_hosts: host-gateway` or direct internal routing)
-3. Add Keycloak healthcheck + `depends_on: condition: service_healthy` for oauth2-proxy
-4. nginx `proxy_pass` can use static hostnames again (no need for `set $var` trick) since Docker DNS at `127.0.0.11` works reliably
+### OAuth2-Proxy ↔ Keycloak (RESOLVED)
+OAuth2-Proxy now uses `extra_hosts: "localhost:host-gateway"` to resolve `localhost` to the host machine, allowing it to reach Keycloak's OIDC endpoints. Uses `depends_on: condition: service_healthy` to wait for Keycloak startup.
 
 ### NGINX dynamic DNS resolution
-`proxy_pass` with static hostnames resolves DNS once at startup. If an upstream container restarts with a new IP, nginx breaks. Current fix: use `set $var hostname; proxy_pass http://$var:port;` to force per-request DNS resolution via the `resolver` directive. This is needed on Podman; may not be needed on Docker but is still good practice.
+`proxy_pass` with static hostnames resolves DNS once at startup. If an upstream container restarts with a new IP, nginx breaks. Current fix: use `set $var hostname; proxy_pass http://$var:port;` to force per-request DNS resolution via the `resolver` directive.
 
 ## Common Pitfalls
 
