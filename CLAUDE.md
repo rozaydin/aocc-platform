@@ -20,9 +20,20 @@ docker compose up -d --force-recreate oauth2-proxy
 
 # View logs
 docker compose logs -f [service-name]
+
+# Check service health
+docker compose ps
 ```
 
-There is no build step, test suite, or linter — this is infrastructure-as-config.
+**Initial Setup Requirements** (detailed in README.md):
+1. Configure `.env` with credentials and secrets
+2. Initialize Garage storage (create buckets, keys)
+3. Configure Keycloak (create realm 'tav', client 'grafana', test user)
+4. Update `.env` with Garage S3 keys and Keycloak client secret
+
+There is no application build step or test suite — this is infrastructure-as-config.
+
+**Performance Testing**: Use `LoadTestExecutionPlan.md` to validate platform performance or re-establish baselines after changes.
 
 ## Architecture
 
@@ -82,6 +93,14 @@ Functions: NATS/HTTP → Nuclio → [process] → NATS/S3/DB
 - `alloy/config.alloy` — Log collection pipeline
 - `grafana/provisioning/` — Datasources and dashboard definitions
 
+**Testing & Documentation**:
+- `LoadTestExecutionPlan.md` — Step-by-step load testing procedures
+- `TestPlan.md` — Comprehensive test plan with KPIs
+- `test-results/` — Load test results, charts, and performance analysis
+  - `FINAL-REPORT.md` — Complete performance validation report
+  - `charts/` — Performance visualizations (gnuplot)
+  - `raw-data/phase{1-5}/` — Detailed test outputs by phase
+
 ## Current State & Known Issues
 
 ### OAuth2-Proxy ↔ Keycloak (RESOLVED)
@@ -90,6 +109,28 @@ OAuth2-Proxy now uses `extra_hosts: "localhost:host-gateway"` to resolve `localh
 ### NGINX dynamic DNS resolution
 `proxy_pass` with static hostnames resolves DNS once at startup. If an upstream container restarts with a new IP, nginx breaks. Current fix: use `set $var hostname; proxy_pass http://$var:port;` to force per-request DNS resolution via the `resolver` directive.
 
+## Load Testing & Performance
+
+The platform has been thoroughly load tested (results in `test-results/`):
+
+**Validated Performance**:
+- PostgreSQL: 8,787 TPS (17x above target)
+- NGINX: 5,458 req/s (11x above target)
+- Prometheus/Loki queries: <10ms (200-500x faster than targets)
+- Zero errors across 1.5M+ operations
+
+**Testing Tools Available**:
+- `pgbench` - Database load testing
+- `wrk` - HTTP benchmarking
+- Load test execution plan: `LoadTestExecutionPlan.md`
+- Test results & charts: `test-results/FINAL-REPORT.md`
+
+**Performance Baselines** (for monitoring):
+- Database TPS should stay >4,400 (alert if <50% of baseline)
+- NGINX req/s should stay >2,700
+- Query latency should stay <100ms
+- Memory usage: Platform uses ~2.2GB at baseline (3.7% of 58GB)
+
 ## Common Pitfalls
 
 - **OAuth2-Proxy startup race:** oauth2-proxy depends on Keycloak being fully ready (OIDC discovery endpoint). `restart: unless-stopped` handles this via retries. On Docker, use healthcheck + `condition: service_healthy` instead.
@@ -97,3 +138,4 @@ OAuth2-Proxy now uses `extra_hosts: "localhost:host-gateway"` to resolve `localh
 - **Keycloak connects directly to PostgreSQL** (not through PgBouncer) because it uses JDBC.
 - **Podman vs Docker on macOS:** Podman on macOS lacks `host-gateway` support, Docker embedded DNS (`127.0.0.11`), and `condition: service_healthy`. Linux or Docker Desktop avoids these issues.
 - **Network name:** Compose project name `tav` + network name `tav` = `tav_tav` as the actual network name.
+- **NATS healthcheck shows unhealthy:** Service is functional despite healthcheck status - `wget` not in container image. Healthcheck is cosmetic only.
